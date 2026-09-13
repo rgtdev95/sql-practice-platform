@@ -8,15 +8,16 @@ sandboxed dataset, and get instant correct/incorrect feedback.
 
 ## Current status
 
-Milestones 1-3 are done. `code/` has a working Django project wired to real
+Milestones 1-4 are done. `code/` has a working Django project wired to real
 Postgres, with pgAdmin and Mailpit running alongside it via Docker Compose,
 a fully working auth flow (sign up, email-OTP verification, login, logout,
-forgot-password), and `Problem` authoring via Django admin with real
-per-problem Postgres schema provisioning. All tested end to end against the
-running dev server and real Postgres — including confirming `practice_runner`
-can read a problem's own schema but gets `permission denied` on
-`public.auth_user`. Next step: milestone 4 (problem catalog page + nav
-shell).
+forgot-password), `Problem` authoring via Django admin with real
+per-problem Postgres schema provisioning, and a login-gated problem catalog
+page (filterable by difficulty/topic) linked from the nav. All tested end
+to end against the running dev server and real Postgres — including
+confirming `practice_runner` can read a problem's own schema but gets
+`permission denied` on `public.auth_user`. Next step: milestone 5
+(dashboard/workspace shell).
 
 To run it: `docker compose up -d` (from `code/`), then
 `uv run manage.py runserver`. pgAdmin is on **5051**, not 5050 — that port
@@ -43,7 +44,7 @@ Planned milestones:
    forgot-password~~ — done
 3. ~~`Problem` model + Django admin, with schema provisioning
    (`problem_<id>` Postgres schema) wired into save~~ — done
-4. Problem catalog page (filter by difficulty/topic) + nav shell
+4. ~~Problem catalog page (filter by difficulty/topic) + nav shell~~ — done
 5. Dashboard (per-problem workspace): question + schema panel, query
    editor, tabbed results (Your Output / Expected Output / Errors), with
    sample-data tables rendered from `information_schema` introspection
@@ -82,7 +83,7 @@ sql-practice-platform/
     ├── manage.py
     ├── config/            # Django project package
     │   ├── settings.py    # env-driven: Postgres, Mailpit SMTP, auth backend, templates/static dirs
-    │   └── urls.py        # home, signup/verify/resend, login/logout, password-reset
+    │   └── urls.py        # home, problems, signup/verify/resend, login/logout, password-reset
     ├── practice/          # the one Django app
     │   ├── models.py      # EmailOTP, Problem (+ provision_schema)
     │   ├── forms.py        # SignupForm, VerifyForm, EmailAuthenticationForm
@@ -94,6 +95,7 @@ sql-practice-platform/
     ├── templates/
     │   ├── base.html      # shared page shell (nav shows auth state)
     │   ├── home.html
+    │   ├── catalog.html
     │   ├── signup.html
     │   ├── verify_email.html
     │   └── registration/  # Django auth views' default template location

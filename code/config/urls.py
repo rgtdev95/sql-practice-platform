@@ -11,6 +11,7 @@ from practice.forms import EmailAuthenticationForm
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.home, name='home'),
+    path('problems/', views.catalog, name='catalog'),
 
     path('signup/', views.signup, name='signup'),
     path('verify/', views.verify_email, name='verify_email'),

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Problems{% endblock %}
+
+{% block content %}
+<h1>Problems</h1>
+
+<form method="get" class="filters">
+    <select name="difficulty" onchange="this.form.submit()">
+        <option value="">All difficulties</option>
+        {% for value, label in difficulties %}
+            <option value="{{ value }}" {% if value == selected_difficulty %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <select name="topic" onchange="this.form.submit()">
+        <option value="">All topics</option>
+        {% for t in topics %}
+            <option value="{{ t }}" {% if t == selected_topic %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+    </select>
+    <noscript><button type="submit">Filter</button></noscript>
+</form>
+
+{% if problems %}
+<table class="problem-list">
+    <thead>
+        <tr><th>Title</th><th>Difficulty</th><th>Topic</th></tr>
+    </thead>
+    <tbody>
+        {% for problem in problems %}
+        <tr>
+            <td>{{ problem.title }}</td>
+            <td>{{ problem.get_difficulty_display }}</td>
+            <td>{{ problem.topic }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No problems match these filters.</p>
+{% endif %}
+{% endblock %}

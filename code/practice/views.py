@@ -1,17 +1,49 @@
 import secrets
 
 from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
 from .forms import SignupForm, VerifyForm
-from .models import EmailOTP
+from .models import EmailOTP, Problem
 
 
 def home(request):
     return render(request, "home.html")
+
+
+@login_required
+def catalog(request):
+    difficulty = request.GET.get("difficulty", "")
+    topic = request.GET.get("topic", "")
+
+    problems = Problem.objects.all()
+    if difficulty:
+        problems = problems.filter(difficulty=difficulty)
+    if topic:
+        problems = problems.filter(topic=topic)
+
+    topics = (
+        Problem.objects.exclude(topic="")
+        .values_list("topic", flat=True)
+        .distinct()
+        .order_by("topic")
+    )
+
+    return render(
+        request,
+        "catalog.html",
+        {
+            "problems": problems,
+            "topics": topics,
+            "difficulties": Problem.Difficulty.choices,
+            "selected_difficulty": difficulty,
+            "selected_topic": topic,
+        },
+    )
 
 
 def send_otp_email(user):
