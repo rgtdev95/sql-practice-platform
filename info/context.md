@@ -8,12 +8,15 @@ sandboxed dataset, and get instant correct/incorrect feedback.
 
 ## Current status
 
-Milestones 1-2 are done. `code/` has a working Django project wired to real
+Milestones 1-3 are done. `code/` has a working Django project wired to real
 Postgres, with pgAdmin and Mailpit running alongside it via Docker Compose,
-plus a fully working auth flow: sign up, email-OTP verification (via
-Mailpit), login, logout, forgot-password — all tested end to end against
-the running dev server. Next step: milestone 3 (`Problem` model + admin +
-per-problem schema provisioning).
+a fully working auth flow (sign up, email-OTP verification, login, logout,
+forgot-password), and `Problem` authoring via Django admin with real
+per-problem Postgres schema provisioning. All tested end to end against the
+running dev server and real Postgres — including confirming `practice_runner`
+can read a problem's own schema but gets `permission denied` on
+`public.auth_user`. Next step: milestone 4 (problem catalog page + nav
+shell).
 
 To run it: `docker compose up -d` (from `code/`), then
 `uv run manage.py runserver`. pgAdmin is on **5051**, not 5050 — that port
@@ -28,14 +31,18 @@ above). Auth needed one non-obvious fix — Django's default `ModelBackend`
 silently blocks inactive users before the custom "please verify your
 email" message can run; switched to `AllowAllUsersModelBackend`, see
 [decisions/2026-09-13-auth-implementation.md](decisions/2026-09-13-auth-implementation.md).
+The `practice_runner` Postgres role is created by a hand-written migration
+(`practice/migrations/0003_create_practice_runner_role.py`), not a
+management command — ties its creation to `migrate`, which already needs
+to run before the app works.
 
 Planned milestones:
 1. ~~uv + Django scaffold, base template, local Postgres + pgAdmin +
    Mailpit via docker compose~~ — done
 2. ~~Auth: sign up, email OTP verification, login, logout,
    forgot-password~~ — done
-3. `Problem` model + Django admin, with schema provisioning
-   (`problem_<id>` Postgres schema) wired into save
+3. ~~`Problem` model + Django admin, with schema provisioning
+   (`problem_<id>` Postgres schema) wired into save~~ — done
 4. Problem catalog page (filter by difficulty/topic) + nav shell
 5. Dashboard (per-problem workspace): question + schema panel, query
    editor, tabbed results (Your Output / Expected Output / Errors), with
@@ -77,10 +84,13 @@ sql-practice-platform/
     │   ├── settings.py    # env-driven: Postgres, Mailpit SMTP, auth backend, templates/static dirs
     │   └── urls.py        # home, signup/verify/resend, login/logout, password-reset
     ├── practice/          # the one Django app
-    │   ├── models.py      # EmailOTP
+    │   ├── models.py      # EmailOTP, Problem (+ provision_schema)
     │   ├── forms.py        # SignupForm, VerifyForm, EmailAuthenticationForm
     │   ├── views.py
-    │   └── admin.py
+    │   ├── admin.py        # ProblemAdmin wires provision_schema() into save
+    │   ├── tests.py         # provisioning: grants, idempotency, rollback-on-bad-SQL
+    │   └── migrations/
+    │       └── 0003_create_practice_runner_role.py
     ├── templates/
     │   ├── base.html      # shared page shell (nav shows auth state)
     │   ├── home.html
