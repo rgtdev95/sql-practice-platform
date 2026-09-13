@@ -71,7 +71,11 @@
 - Profile settings scope — display name only in v1; email and avatar
   deferred.
 
-## Still open
+## Resolved (milestone 11)
 
-- Responsive fallback for the 2x2 dashboard split under ~768px (stack or
-  tab it) — scheduled at milestone 11, not designed yet.
+- Responsive fallback for the 2x2 dashboard split under ~768px: CSS Grid
+  `grid-template-areas`, restacking to question → editor → results →
+  hint → solution under `@media (max-width: 768px)`. Required refactoring
+  away from the two `<div class="workspace-col">` wrapper columns from
+  milestone 5, since each one bundled 3 unrelated panels and could only
+  reorder as a block otherwise.

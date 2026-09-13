@@ -1,5 +1,6 @@
 import secrets
 
+from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -10,7 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from .forms import SignupForm, VerifyForm
+from .forms import ProfileForm, SignupForm, VerifyForm
 from .models import EmailOTP, Problem, Submission
 from .sandbox import check_submission, get_sample_tables
 
@@ -80,6 +81,19 @@ def run_query(request, slug):
         error_message=result.get("error", ""),
     )
     return JsonResponse(result)
+
+
+@login_required
+def profile(request):
+    if request.method == "POST":
+        form = ProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profile updated.")
+            return redirect("profile")
+    else:
+        form = ProfileForm(instance=request.user)
+    return render(request, "profile.html", {"form": form})
 
 
 def send_otp_email(user):

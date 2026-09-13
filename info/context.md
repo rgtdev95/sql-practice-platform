@@ -8,23 +8,40 @@ sandboxed dataset, and get instant correct/incorrect feedback.
 
 ## Current status
 
-Milestones 1-8 are done. `code/` has a working Django project wired to real
+**All 11 milestones are done — the full MVP feature set from the planning
+phase is built.** `code/` has a working Django project wired to real
 Postgres, with pgAdmin and Mailpit running alongside it via Docker Compose,
 a fully working auth flow (sign up, email-OTP verification, login, logout,
 forgot-password), `Problem` authoring via Django admin with real
 per-problem Postgres schema provisioning, a login-gated problem catalog
-page (filterable by difficulty/topic), the sandboxed query execution engine
-(`practice/sandbox.py`), and the per-problem workspace fully wired end to
-end (Run button → `/problems/<slug>/run/` → live result table, tab
-switching, status banner). `run_query` now logs every attempt as a
-`Submission` (correct/incorrect/error, with `error_message` for the latter),
-and the catalog annotates each `Problem` with a per-user `solved` flag via
-`Exists(Submission...)`, shown as a "✓ Solved" badge. 17 automated tests
-pass, and the full loop (solve a problem → see the badge appear on the
-catalog) was verified in a real browser. Milestone 9 (hints + reveal-
-solution UI) turns out to already be done — the hint/solution collapsibles
-were built as part of milestone 5's workspace shell. Next step: milestone
-10 (profile + password settings pages).
+page (filterable by difficulty/topic, with per-user "✓ Solved" badges), the
+sandboxed query execution engine (`practice/sandbox.py`), the per-problem
+workspace fully wired end to end (Run → live results → tab switching →
+status banner, with every attempt logged as a `Submission`), profile +
+password-change settings pages, and a responsive workspace layout.
+
+The workspace (`problem_detail.html`) was refactored to use CSS Grid
+`grid-template-areas` instead of two wrapper `<div class="workspace-col">`
+columns — this was needed, not just tidying, because the old structure
+made mobile stacking order impossible to fix without it (each column
+bundled 3 unrelated panels together, so they could only reorder as a
+block). The areas layout lets each of the 5 panels (hint, solution, editor,
+question, results) be placed independently per breakpoint: desktop keeps
+hint/solution/editor left and question/results right (verified via real
+`getBoundingClientRect()` geometry — hint and question share the same row,
+confirming the 2-column arrangement survived the refactor exactly), while
+`@media (max-width: 768px)` restacks to a single column in question →
+editor → results → hint → solution order — the actual reading order a
+learner needs, not just DOM order. BrowserOS neo has no viewport-resize/
+device-emulation control, so the mobile breakpoint couldn't be visually
+screenshotted; instead it was verified by introspecting the loaded
+stylesheet directly (`document.styleSheets`), confirming the `@media` rule
+parses with zero CSS errors and its `grid-template-areas` value is exactly
+`"question" "editor" "results" "hint" "solution"`.
+
+17 automated tests pass. Deployment is still explicitly out of scope — the
+app has never been run anywhere but locally, per the earliest planning
+decision.
 
 To run it: `docker compose up -d` (from `code/`), then
 `uv run manage.py runserver`. pgAdmin is on **5051**, not 5050 — that port
@@ -73,9 +90,9 @@ Planned milestones:
 8. ~~Submission tracking + solved badges~~ — done
 9. ~~Hints + reveal-solution UI (left panel of the dashboard)~~ — done
    as part of milestone 5
-10. Profile (display name only) + password settings pages
-11. CSS polish, responsive fallback for the dashboard split below ~768px
-    (still open — see notes/2026-09-13-ui-research.md)
+10. ~~Profile (display name only) + password settings pages~~ — done
+11. ~~CSS polish, responsive fallback for the dashboard split below
+    ~768px~~ — done
 
 See [notes/2026-09-13-ui-research.md](notes/2026-09-13-ui-research.md) for
 the full page list and layout research,
@@ -105,8 +122,8 @@ sql-practice-platform/
     │   └── urls.py        # home, problems, problems/<slug>/run, signup/verify/resend, login/logout, password-reset
     ├── practice/          # the one Django app
     │   ├── models.py      # EmailOTP, Problem (+ provision_schema), Submission
-    │   ├── forms.py        # SignupForm, VerifyForm, EmailAuthenticationForm
-    │   ├── views.py         # run_query logs a Submission; catalog annotates solved
+    │   ├── forms.py        # SignupForm, VerifyForm, EmailAuthenticationForm, ProfileForm
+    │   ├── views.py         # run_query logs a Submission; catalog annotates solved; profile
     │   ├── sandbox.py      # practice_runner connection, sample-table reads,
     │   │                   # validate_select_only, run_in_schema, check_submission
     │   ├── admin.py        # ProblemAdmin wires provision_schema() into save
@@ -114,14 +131,17 @@ sql-practice-platform/
     │   └── migrations/
     │       └── 0003_create_practice_runner_role.py
     ├── templates/
-    │   ├── base.html      # shared page shell (nav shows auth state)
+    │   ├── base.html      # shared page shell (nav, one-time flash messages)
     │   ├── home.html
     │   ├── catalog.html
     │   ├── problem_detail.html  # workspace: hint/solution, editor, question+schema, results
+    │   ├── profile.html
     │   ├── signup.html
     │   ├── verify_email.html
     │   └── registration/  # Django auth views' default template location
     │       ├── login.html
+    │       ├── password_change_form.html
+    │       ├── password_change_done.html
     │       └── password_reset_*.html
     └── static/
         ├── css/base.css

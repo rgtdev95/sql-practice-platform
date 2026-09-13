@@ -12,7 +12,7 @@
         <div class="nav-links">
             {% if user.is_authenticated %}
                 <a href="{% url 'catalog' %}">Problems</a>
-                <span>{{ user.email }}</span>
+                <a href="{% url 'profile' %}">{{ user.first_name|default:user.email }}</a>
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
                     <button type="submit">Log out</button>
@@ -24,6 +24,13 @@
         </div>
     </nav>
     <main class="{% block main_class %}{% endblock %}">
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li class="message-{{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
         {% block content %}{% endblock %}
     </main>
     {% block extra_js %}{% endblock %}

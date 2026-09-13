@@ -53,8 +53,23 @@ form p {
     margin-bottom: 1rem;
 }
 
+.messages {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+}
+
+.messages .message-success {
+    color: #1e7e34;
+}
+
+.messages .message-error {
+    color: #b00020;
+}
+
 .filters {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.75rem;
     margin-bottom: 1rem;
 }
@@ -80,14 +95,33 @@ form p {
 .workspace {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+        "hint     question"
+        "solution question"
+        "editor   results";
     gap: 1.5rem;
     align-items: start;
 }
 
-.workspace-col {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+.area-hint { grid-area: hint; }
+.area-solution { grid-area: solution; }
+.area-editor { grid-area: editor; }
+.area-question { grid-area: question; }
+.area-results { grid-area: results; }
+
+/* Below ~768px, stack into one column. Question/schema comes first (read
+   before writing a query), then the editor and results, with the
+   optional hint/solution aids last since they're collapsed by default. */
+@media (max-width: 768px) {
+    .workspace {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "question"
+            "editor"
+            "results"
+            "hint"
+            "solution";
+    }
 }
 
 .panel {

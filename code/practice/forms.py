@@ -35,6 +35,13 @@ class SignupForm(UserCreationForm):
         return user
 
 
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["first_name"]
+        labels = {"first_name": "Display name"}
+
+
 class VerifyForm(forms.Form):
     code = forms.CharField(
         max_length=6,
