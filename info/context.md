@@ -8,16 +8,19 @@ sandboxed dataset, and get instant correct/incorrect feedback.
 
 ## Current status
 
-Milestones 1-4 are done. `code/` has a working Django project wired to real
+Milestones 1-5 are done. `code/` has a working Django project wired to real
 Postgres, with pgAdmin and Mailpit running alongside it via Docker Compose,
 a fully working auth flow (sign up, email-OTP verification, login, logout,
 forgot-password), `Problem` authoring via Django admin with real
-per-problem Postgres schema provisioning, and a login-gated problem catalog
-page (filterable by difficulty/topic) linked from the nav. All tested end
-to end against the running dev server and real Postgres — including
-confirming `practice_runner` can read a problem's own schema but gets
-`permission denied` on `public.auth_user`. Next step: milestone 5
-(dashboard/workspace shell).
+per-problem Postgres schema provisioning, a login-gated problem catalog
+page (filterable by difficulty/topic), and the per-problem workspace page
+(`/problems/<slug>/`) rendering the question, live sample-data tables
+(read as `practice_runner`, via the new `practice/sandbox.py`), hint/
+solution collapsibles, a query editor textarea, and a static tabbed
+results panel. The editor and Run button don't do anything yet — that's
+milestones 6-7. All tested end to end against the running dev server and
+real Postgres. Next step: milestone 6 (the sandboxed query execution
+engine itself).
 
 To run it: `docker compose up -d` (from `code/`), then
 `uv run manage.py runserver`. pgAdmin is on **5051**, not 5050 — that port
@@ -45,9 +48,10 @@ Planned milestones:
 3. ~~`Problem` model + Django admin, with schema provisioning
    (`problem_<id>` Postgres schema) wired into save~~ — done
 4. ~~Problem catalog page (filter by difficulty/topic) + nav shell~~ — done
-5. Dashboard (per-problem workspace): question + schema panel, query
+5. ~~Dashboard (per-problem workspace): question + schema panel, query
    editor, tabbed results (Your Output / Expected Output / Errors), with
-   sample-data tables rendered from `information_schema` introspection
+   sample-data tables rendered from `information_schema` introspection~~
+   — done (static shell; editor/Run and tab-switching aren't wired yet)
 6. Sandboxed SQL execution via the `practice_runner` Postgres role, safety
    checks
 7. Run-query AJAX endpoint + JS results table, with Running/Correct/
@@ -88,6 +92,7 @@ sql-practice-platform/
     │   ├── models.py      # EmailOTP, Problem (+ provision_schema)
     │   ├── forms.py        # SignupForm, VerifyForm, EmailAuthenticationForm
     │   ├── views.py
+    │   ├── sandbox.py      # practice_runner connection + sample-table reads
     │   ├── admin.py        # ProblemAdmin wires provision_schema() into save
     │   ├── tests.py         # provisioning: grants, idempotency, rollback-on-bad-SQL
     │   └── migrations/
@@ -96,6 +101,7 @@ sql-practice-platform/
     │   ├── base.html      # shared page shell (nav shows auth state)
     │   ├── home.html
     │   ├── catalog.html
+    │   ├── problem_detail.html  # workspace: hint/solution, editor, question+schema, results
     │   ├── signup.html
     │   ├── verify_email.html
     │   └── registration/  # Django auth views' default template location

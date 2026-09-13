@@ -23,7 +23,7 @@
             {% endif %}
         </div>
     </nav>
-    <main>
+    <main class="{% block main_class %}{% endblock %}">
         {% block content %}{% endblock %}
     </main>
 </body>

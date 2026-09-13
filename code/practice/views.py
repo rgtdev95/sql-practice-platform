@@ -4,11 +4,12 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from .forms import SignupForm, VerifyForm
 from .models import EmailOTP, Problem
+from .sandbox import get_sample_tables
 
 
 def home(request):
@@ -44,6 +45,13 @@ def catalog(request):
             "selected_topic": topic,
         },
     )
+
+
+@login_required
+def problem_detail(request, slug):
+    problem = get_object_or_404(Problem, slug=slug)
+    tables = get_sample_tables(problem)
+    return render(request, "problem_detail.html", {"problem": problem, "tables": tables})
 
 
 def send_otp_email(user):

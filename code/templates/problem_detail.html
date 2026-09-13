@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}{{ problem.title }}{% endblock %}
+{% block main_class %}wide{% endblock %}
+
+{% block content %}
+<div class="workspace">
+    <div class="workspace-col">
+        <details class="panel">
+            <summary>Hint</summary>
+            <p>{{ problem.hint|default:"No hint for this problem." }}</p>
+        </details>
+        <details class="panel">
+            <summary>Reveal solution</summary>
+            <pre>{{ problem.solution_sql }}</pre>
+        </details>
+        <div class="panel editor-panel">
+            <h2>Your query</h2>
+            <form id="query-form">
+                <textarea name="query" rows="12" placeholder="SELECT ..."></textarea>
+                <button type="submit">Run</button>
+            </form>
+        </div>
+    </div>
+    <div class="workspace-col">
+        <div class="panel question-panel">
+            <h1>{{ problem.title }}</h1>
+            <p class="meta">{{ problem.get_difficulty_display }} &middot; {{ problem.topic }}</p>
+            <p>{{ problem.prompt }}</p>
+            {% for table in tables %}
+                <h3>{{ table.name }}</h3>
+                <div class="table-scroll">
+                    <table class="sample-table">
+                        <thead>
+                            <tr>{% for col in table.columns %}<th>{{ col }}</th>{% endfor %}</tr>
+                        </thead>
+                        <tbody>
+                            {% for row in table.rows %}
+                            <tr>{% for value in row %}<td>{{ value }}</td>{% endfor %}</tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="panel results-panel">
+            <div class="tabs">
+                <span class="tab active">Your Output</span>
+                <span class="tab">Expected Output</span>
+                <span class="tab">Errors</span>
+            </div>
+            <div class="tab-content">
+                <p class="placeholder">Run a query to see results here.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

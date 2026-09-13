@@ -29,7 +29,7 @@
     <tbody>
         {% for problem in problems %}
         <tr>
-            <td>{{ problem.title }}</td>
+            <td><a href="{% url 'problem_detail' problem.slug %}">{{ problem.title }}</a></td>
             <td>{{ problem.get_difficulty_display }}</td>
             <td>{{ problem.topic }}</td>
         </tr>

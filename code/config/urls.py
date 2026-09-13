@@ -12,6 +12,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.home, name='home'),
     path('problems/', views.catalog, name='catalog'),
+    path('problems/<slug:slug>/', views.problem_detail, name='problem_detail'),
 
     path('signup/', views.signup, name='signup'),
     path('verify/', views.verify_email, name='verify_email'),
