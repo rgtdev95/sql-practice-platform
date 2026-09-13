@@ -4,13 +4,14 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
+from django.db.models import Exists, OuterRef
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from .forms import SignupForm, VerifyForm
-from .models import EmailOTP, Problem
+from .models import EmailOTP, Problem, Submission
 from .sandbox import check_submission, get_sample_tables
 
 
@@ -23,7 +24,13 @@ def catalog(request):
     difficulty = request.GET.get("difficulty", "")
     topic = request.GET.get("topic", "")
 
-    problems = Problem.objects.all()
+    problems = Problem.objects.annotate(
+        solved=Exists(
+            Submission.objects.filter(
+                user=request.user, problem=OuterRef("pk"), is_correct=True
+            )
+        )
+    )
     if difficulty:
         problems = problems.filter(difficulty=difficulty)
     if topic:
@@ -63,10 +70,16 @@ def run_query(request, slug):
     query = request.POST.get("query", "")
     if not query.strip():
         return JsonResponse({"status": "error", "error": "Write a query first."})
-    # ponytail: not logged as a Submission yet — that's milestone 8
-    # (progress tracking), kept separate so this endpoint stays focused on
-    # just running the query.
-    return JsonResponse(check_submission(problem, query))
+
+    result = check_submission(problem, query)
+    Submission.objects.create(
+        user=request.user,
+        problem=problem,
+        submitted_sql=query,
+        is_correct=result["status"] == "correct",
+        error_message=result.get("error", ""),
+    )
+    return JsonResponse(result)
 
 
 def send_otp_email(user):

@@ -1,7 +1,9 @@
+from django.contrib.auth.models import User
 from django.db import connection
 from django.test import SimpleTestCase, TestCase, TransactionTestCase
+from django.urls import reverse
 
-from .models import Problem
+from .models import Problem, Submission
 from .sandbox import QueryError, check_submission, validate_select_only
 
 
@@ -156,3 +158,58 @@ class SandboxExecutionTests(TransactionTestCase):
         result = check_submission(problem, "SELECT pg_sleep(10)")
         self.assertEqual(result["status"], "error")
         self.assertIn("too long", result["error"].lower())
+
+
+class SubmissionTrackingTests(TransactionTestCase):
+    """TransactionTestCase for the same reason as SandboxExecutionTests:
+    run_query goes through check_submission, which needs the problem's
+    schema actually committed for its separate practice_runner connection
+    to see it."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="learner@example.com", email="learner@example.com",
+            password="pass12345", is_active=True,
+        )
+        self.problem = Problem.objects.create(
+            title="Numbers",
+            slug="numbers-sub",
+            difficulty=Problem.Difficulty.EASY,
+            schema_sql="CREATE TABLE nums (n integer); INSERT INTO nums VALUES (1), (2);",
+            solution_sql="SELECT n FROM nums",
+        )
+        self.problem.provision_schema()
+        self.client.force_login(self.user)
+
+    def run_query_url(self):
+        return reverse("run_query", args=[self.problem.slug])
+
+    def test_correct_run_logs_submission_and_marks_solved(self):
+        response = self.client.post(self.run_query_url(), {"query": "SELECT n FROM nums"})
+        self.assertEqual(response.status_code, 200)
+
+        submission = Submission.objects.get(user=self.user, problem=self.problem)
+        self.assertTrue(submission.is_correct)
+
+        catalog_response = self.client.get(reverse("catalog"))
+        problems = {p.slug: p for p in catalog_response.context["problems"]}
+        self.assertTrue(problems[self.problem.slug].solved)
+
+    def test_rejected_run_logs_incorrect_submission_with_message(self):
+        self.client.post(self.run_query_url(), {"query": "DELETE FROM nums"})
+
+        submission = Submission.objects.get(user=self.user, problem=self.problem)
+        self.assertFalse(submission.is_correct)
+        self.assertIn("SELECT", submission.error_message)
+
+    def test_solved_badge_is_per_user(self):
+        self.client.post(self.run_query_url(), {"query": "SELECT n FROM nums"})
+
+        other = User.objects.create_user(
+            username="other@example.com", email="other@example.com",
+            password="pass12345", is_active=True,
+        )
+        self.client.force_login(other)
+        catalog_response = self.client.get(reverse("catalog"))
+        problems = {p.slug: p for p in catalog_response.context["problems"]}
+        self.assertFalse(problems[self.problem.slug].solved)

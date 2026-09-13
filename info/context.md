@@ -8,22 +8,23 @@ sandboxed dataset, and get instant correct/incorrect feedback.
 
 ## Current status
 
-Milestones 1-7 are done. `code/` has a working Django project wired to real
+Milestones 1-8 are done. `code/` has a working Django project wired to real
 Postgres, with pgAdmin and Mailpit running alongside it via Docker Compose,
 a fully working auth flow (sign up, email-OTP verification, login, logout,
 forgot-password), `Problem` authoring via Django admin with real
 per-problem Postgres schema provisioning, a login-gated problem catalog
 page (filterable by difficulty/topic), the sandboxed query execution engine
-(`practice/sandbox.py`, 14 automated tests), and the per-problem workspace
-page is now fully wired end to end: the Run button POSTs to
-`/problems/<slug>/run/` (`views.run_query`) via `static/js/workspace.js`,
-which renders the actual result table, switches tabs automatically based on
-correct/incorrect/error, and shows an inline status banner. Verified in a
-real browser (not just curl) — login, editing the query, clicking Run,
-correct/incorrect/rejected cases, manual tab-switching, zero console
-errors, and confirmed a rejected `DELETE` truly didn't touch the data.
-Submissions aren't logged to the DB yet — that's milestone 8. Next step:
-milestone 8 (Submission tracking + solved badges).
+(`practice/sandbox.py`), and the per-problem workspace fully wired end to
+end (Run button → `/problems/<slug>/run/` → live result table, tab
+switching, status banner). `run_query` now logs every attempt as a
+`Submission` (correct/incorrect/error, with `error_message` for the latter),
+and the catalog annotates each `Problem` with a per-user `solved` flag via
+`Exists(Submission...)`, shown as a "✓ Solved" badge. 17 automated tests
+pass, and the full loop (solve a problem → see the badge appear on the
+catalog) was verified in a real browser. Milestone 9 (hints + reveal-
+solution UI) turns out to already be done — the hint/solution collapsibles
+were built as part of milestone 5's workspace shell. Next step: milestone
+10 (profile + password settings pages).
 
 To run it: `docker compose up -d` (from `code/`), then
 `uv run manage.py runserver`. pgAdmin is on **5051**, not 5050 — that port
@@ -63,14 +64,15 @@ Planned milestones:
 5. ~~Dashboard (per-problem workspace): question + schema panel, query
    editor, tabbed results (Your Output / Expected Output / Errors), with
    sample-data tables rendered from `information_schema` introspection~~
-   — done (static shell; editor/Run and tab-switching aren't wired yet)
+   — done
 6. ~~Sandboxed SQL execution via the `practice_runner` Postgres role, safety
    checks~~ — done
 7. ~~Run-query AJAX endpoint + JS results table, with Running/Correct/
    Incorrect/Error states shown as an inline banner on the Results panel~~
    — done
-8. Submission tracking + solved badges
-9. Hints + reveal-solution UI (left panel of the dashboard)
+8. ~~Submission tracking + solved badges~~ — done
+9. ~~Hints + reveal-solution UI (left panel of the dashboard)~~ — done
+   as part of milestone 5
 10. Profile (display name only) + password settings pages
 11. CSS polish, responsive fallback for the dashboard split below ~768px
     (still open — see notes/2026-09-13-ui-research.md)
@@ -102,13 +104,13 @@ sql-practice-platform/
     │   ├── settings.py    # env-driven: Postgres, Mailpit SMTP, auth backend, templates/static dirs
     │   └── urls.py        # home, problems, problems/<slug>/run, signup/verify/resend, login/logout, password-reset
     ├── practice/          # the one Django app
-    │   ├── models.py      # EmailOTP, Problem (+ provision_schema)
+    │   ├── models.py      # EmailOTP, Problem (+ provision_schema), Submission
     │   ├── forms.py        # SignupForm, VerifyForm, EmailAuthenticationForm
-    │   ├── views.py
+    │   ├── views.py         # run_query logs a Submission; catalog annotates solved
     │   ├── sandbox.py      # practice_runner connection, sample-table reads,
     │   │                   # validate_select_only, run_in_schema, check_submission
     │   ├── admin.py        # ProblemAdmin wires provision_schema() into save
-    │   ├── tests.py         # provisioning + sandbox execution (14 tests)
+    │   ├── tests.py         # provisioning + sandbox execution + submissions (17 tests)
     │   └── migrations/
     │       └── 0003_create_practice_runner_role.py
     ├── templates/

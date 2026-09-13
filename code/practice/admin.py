@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import EmailOTP, Problem
+from .models import EmailOTP, Problem, Submission
 
 
 @admin.register(EmailOTP)
@@ -22,3 +22,9 @@ class ProblemAdmin(admin.ModelAdmin):
         # validation if this ever needs to be smoother.
         super().save_model(request, obj, form, change)
         obj.provision_schema()
+
+
+@admin.register(Submission)
+class SubmissionAdmin(admin.ModelAdmin):
+    list_display = ("user", "problem", "is_correct", "created_at")
+    list_filter = ("is_correct", "problem")

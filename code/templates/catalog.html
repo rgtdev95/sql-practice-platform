@@ -24,7 +24,7 @@
 {% if problems %}
 <table class="problem-list">
     <thead>
-        <tr><th>Title</th><th>Difficulty</th><th>Topic</th></tr>
+        <tr><th>Title</th><th>Difficulty</th><th>Topic</th><th>Solved</th></tr>
     </thead>
     <tbody>
         {% for problem in problems %}
@@ -32,6 +32,7 @@
             <td><a href="{% url 'problem_detail' problem.slug %}">{{ problem.title }}</a></td>
             <td>{{ problem.get_difficulty_display }}</td>
             <td>{{ problem.topic }}</td>
+            <td>{% if problem.solved %}<span class="solved-badge">&#10003; Solved</span>{% endif %}</td>
         </tr>
         {% endfor %}
     </tbody>

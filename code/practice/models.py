@@ -82,3 +82,25 @@ class Problem(models.Model):
                 f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema}" '
                 f"GRANT SELECT ON TABLES TO practice_runner"
             )
+
+
+class Submission(models.Model):
+    """One run-query attempt. 'Solved' status is derived from these —
+    no separate progress table, see info/decisions/2026-09-13-mvp-scope.md.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="submissions"
+    )
+    problem = models.ForeignKey(Problem, on_delete=models.CASCADE, related_name="submissions")
+    submitted_sql = models.TextField()
+    is_correct = models.BooleanField()
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        status = "correct" if self.is_correct else "incorrect"
+        return f"{self.user} - {self.problem} ({status})"

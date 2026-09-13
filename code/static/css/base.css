@@ -71,6 +71,12 @@ form p {
     border-bottom: 1px solid #e0e0e0;
 }
 
+.solved-badge {
+    color: #1e7e34;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
 .workspace {
     display: grid;
     grid-template-columns: 1fr 1fr;
