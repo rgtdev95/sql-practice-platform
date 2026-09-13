@@ -1,0 +1,21 @@
+flowchart TD
+    A[User browses problem catalog] --> B[Opens a problem detail page]
+    B --> C["Backend introspects problem_&lt;id&gt; schema<br/>renders sample tables in UI"]
+    C --> D[User writes SQL in editor, clicks Run]
+    D --> E{Single SELECT statement?}
+    E -- No --> F[Reject: show error, nothing executed]
+    E -- Yes --> G["Connect as practice_runner role<br/>SET search_path TO problem_&lt;id&gt;"]
+    G --> H[Execute user's query]
+    G --> I[Execute problem.solution_sql]
+    H --> J{Result sets match?}
+    I --> J
+    J -- Yes --> K[Mark correct]
+    J -- No --> L[Mark incorrect]
+    K --> M[Log Submission record]
+    L --> M
+    M --> N[Return JSON feedback]
+    N --> O[JS renders result table + correct/incorrect state]
+    O --> P{User wants more?}
+    P -- Hint --> Q[Show problem.hint]
+    P -- Reveal solution --> R[Show problem.solution_sql]
+    P -- Done --> S[Catalog's solved badge updates from Submission history]

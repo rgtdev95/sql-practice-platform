@@ -1,0 +1,66 @@
+// SQL Practice Platform — DBML schema for dbdiagram.io
+// Two tiers: fixed app tables (public schema) + one dynamic Postgres
+// schema per problem (problem_<id>), provisioned from Problem.schema_sql.
+// See info/context.md and info/decisions/2026-09-13-postgres-schema-sandbox.md
+
+Table auth_user {
+  id integer [pk]
+  username varchar [unique, not null]
+  email varchar
+  password varchar [not null, note: 'hashed by Django']
+  is_active boolean [default: true]
+  date_joined timestamp
+  Note: 'Django built-in User model — no custom user model'
+}
+
+Table practice_problem {
+  id integer [pk]
+  slug varchar [unique, not null]
+  title varchar [not null]
+  difficulty varchar [not null, note: 'easy | medium | hard']
+  topic varchar [note: 'joins, aggregation, subqueries, window functions...']
+  prompt text [not null]
+  schema_sql text [not null, note: 'DDL + seed data; provisions Postgres schema problem_<id>']
+  solution_sql text [not null, note: 'run live to compute expected results']
+  hint text [note: 'nullable']
+  created_at timestamp [default: `now()`]
+}
+
+Table practice_submission {
+  id integer [pk]
+  user_id integer [not null, ref: > auth_user.id]
+  problem_id integer [not null, ref: > practice_problem.id]
+  submitted_sql text [not null]
+  is_correct boolean [not null]
+  error_message text [note: 'nullable']
+  created_at timestamp [default: `now()`]
+  Note: '"Solved" status is derived from this table, not stored separately'
+}
+
+// --- Illustrative only: one example of a per-problem schema ---
+// Every Problem gets its own Postgres schema (problem_<id>), created from
+// practice_problem.schema_sql at authoring time. Table shape varies per
+// problem — this is just a sample for problem_id = 1.
+
+Table "problem_1.employees" {
+  id integer [pk]
+  name varchar
+  department_id integer
+  salary numeric
+}
+
+Table "problem_1.departments" {
+  id integer [pk]
+  name varchar
+}
+
+Ref: "problem_1.employees".department_id > "problem_1.departments".id
+
+Note dynamic_schemas {
+  '''
+  Each Problem provisions its own Postgres schema (problem_<id>) — not a
+  fixed part of this diagram. User-submitted SQL runs read-only through the
+  practice_runner role, scoped to one problem_<id> schema via search_path,
+  with zero access to the public schema above.
+  '''
+}
