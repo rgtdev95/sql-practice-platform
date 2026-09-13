@@ -8,16 +8,32 @@ sandboxed dataset, and get instant correct/incorrect feedback.
 
 ## Current status
 
-Planning stage — no code written yet. Stack, MVP scope, and database
-architecture decided (see decisions/). Next step: scaffold the uv + Django
-project (milestone 1), including a local Postgres instance.
+Milestones 1-2 are done. `code/` has a working Django project wired to real
+Postgres, with pgAdmin and Mailpit running alongside it via Docker Compose,
+plus a fully working auth flow: sign up, email-OTP verification (via
+Mailpit), login, logout, forgot-password — all tested end to end against
+the running dev server. Next step: milestone 3 (`Problem` model + admin +
+per-problem schema provisioning).
+
+To run it: `docker compose up -d` (from `code/`), then
+`uv run manage.py runserver`. pgAdmin is on **5051**, not 5050 — that port
+was already taken by an unrelated project on this machine. Mailpit's inbox
+is at `localhost:8025`.
+
+Deviations from the original plan: `uv init` defaulted to a
+distributable-library layout (`src/`, a build-system, an entry-point
+script) — stripped, since a Django app isn't a published package
+(`tool.uv.package = false` instead). pgAdmin's host port is 5051 (see
+above). Auth needed one non-obvious fix — Django's default `ModelBackend`
+silently blocks inactive users before the custom "please verify your
+email" message can run; switched to `AllowAllUsersModelBackend`, see
+[decisions/2026-09-13-auth-implementation.md](decisions/2026-09-13-auth-implementation.md).
 
 Planned milestones:
-1. uv + Django scaffold, base template, local Postgres + pgAdmin + Mailpit
-   via docker compose
-2. Auth: sign up, email OTP verification, login, logout, forgot-password
-   (Django built-in auth + password-reset views + an `EmailOTP` model
-   gating `is_active`)
+1. ~~uv + Django scaffold, base template, local Postgres + pgAdmin +
+   Mailpit via docker compose~~ — done
+2. ~~Auth: sign up, email OTP verification, login, logout,
+   forgot-password~~ — done
 3. `Problem` model + Django admin, with schema provisioning
    (`problem_<id>` Postgres schema) wired into save
 4. Problem catalog page (filter by difficulty/topic) + nav shell
@@ -43,8 +59,8 @@ for forgot-password/run-states/empty-states/profile-scope decisions.
 
 ## Project structure
 
-Planned scaffold (milestone 1, not built yet). All code lives under `code/`,
-kept separate from `info/` (project docs) and repo-root files:
+Built (milestone 1). All code lives under `code/`, kept separate from
+`info/` (project docs) and repo-root files:
 
 ```
 sql-practice-platform/
@@ -55,13 +71,24 @@ sql-practice-platform/
     ├── uv.lock
     ├── docker-compose.yml # postgres:18.6 + pgadmin4:9.17 + mailpit:v1.31.1
     ├── .env               # DB creds, SECRET_KEY (git-ignored)
+    ├── .env.example
     ├── manage.py
     ├── config/            # Django project package
-    │   ├── settings.py    # DATABASES pointed at the compose Postgres
-    │   └── urls.py
-    ├── practice/          # the one Django app (models, views, admin)
+    │   ├── settings.py    # env-driven: Postgres, Mailpit SMTP, auth backend, templates/static dirs
+    │   └── urls.py        # home, signup/verify/resend, login/logout, password-reset
+    ├── practice/          # the one Django app
+    │   ├── models.py      # EmailOTP
+    │   ├── forms.py        # SignupForm, VerifyForm, EmailAuthenticationForm
+    │   ├── views.py
+    │   └── admin.py
     ├── templates/
-    │   └── base.html      # shared page shell (nav, css link)
+    │   ├── base.html      # shared page shell (nav shows auth state)
+    │   ├── home.html
+    │   ├── signup.html
+    │   ├── verify_email.html
+    │   └── registration/  # Django auth views' default template location
+    │       ├── login.html
+    │       └── password_reset_*.html
     └── static/
         └── css/base.css
 ```

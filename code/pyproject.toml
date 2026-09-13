@@ -1,0 +1,17 @@
+[project]
+name = "sql-practice-platform"
+version = "0.1.0"
+description = "A user-friendly web platform for practicing SQL"
+authors = [
+    { name = "Ron T. 95", email = "rgtprofessional95@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "django==5.2.17",
+    "psycopg[binary]==3.3.*",
+    "python-dotenv>=1.2.3",
+    "sqlparse>=0.6.0",
+]
+
+[tool.uv]
+package = false
