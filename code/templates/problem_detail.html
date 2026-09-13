@@ -16,7 +16,8 @@
         </details>
         <div class="panel editor-panel">
             <h2>Your query</h2>
-            <form id="query-form">
+            <form id="query-form" action="{% url 'run_query' problem.slug %}">
+                {% csrf_token %}
                 <textarea name="query" rows="12" placeholder="SELECT ..."></textarea>
                 <button type="submit">Run</button>
             </form>
@@ -44,15 +45,28 @@
             {% endfor %}
         </div>
         <div class="panel results-panel">
+            <div id="status-banner" class="status-banner" hidden></div>
             <div class="tabs">
-                <span class="tab active">Your Output</span>
-                <span class="tab">Expected Output</span>
-                <span class="tab">Errors</span>
+                <button type="button" class="tab active" data-tab="output">Your Output</button>
+                <button type="button" class="tab" data-tab="expected">Expected Output</button>
+                <button type="button" class="tab" data-tab="errors">Errors</button>
             </div>
-            <div class="tab-content">
-                <p class="placeholder">Run a query to see results here.</p>
+            <div class="tab-panels">
+                <div class="tab-panel active" data-panel="output">
+                    <p class="placeholder">Run a query to see results here.</p>
+                </div>
+                <div class="tab-panel" data-panel="expected">
+                    <p class="placeholder">Run a query to see the expected output here.</p>
+                </div>
+                <div class="tab-panel" data-panel="errors">
+                    <p class="placeholder">Errors will appear here.</p>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/workspace.js"></script>
 {% endblock %}

@@ -4,12 +4,14 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 from .forms import SignupForm, VerifyForm
 from .models import EmailOTP, Problem
-from .sandbox import get_sample_tables
+from .sandbox import check_submission, get_sample_tables
 
 
 def home(request):
@@ -52,6 +54,19 @@ def problem_detail(request, slug):
     problem = get_object_or_404(Problem, slug=slug)
     tables = get_sample_tables(problem)
     return render(request, "problem_detail.html", {"problem": problem, "tables": tables})
+
+
+@login_required
+@require_POST
+def run_query(request, slug):
+    problem = get_object_or_404(Problem, slug=slug)
+    query = request.POST.get("query", "")
+    if not query.strip():
+        return JsonResponse({"status": "error", "error": "Write a query first."})
+    # ponytail: not logged as a Submission yet — that's milestone 8
+    # (progress tracking), kept separate so this endpoint stays focused on
+    # just running the query.
+    return JsonResponse(check_submission(problem, query))
 
 
 def send_otp_email(user):

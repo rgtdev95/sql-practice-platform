@@ -8,20 +8,22 @@ sandboxed dataset, and get instant correct/incorrect feedback.
 
 ## Current status
 
-Milestones 1-6 are done. `code/` has a working Django project wired to real
+Milestones 1-7 are done. `code/` has a working Django project wired to real
 Postgres, with pgAdmin and Mailpit running alongside it via Docker Compose,
 a fully working auth flow (sign up, email-OTP verification, login, logout,
 forgot-password), `Problem` authoring via Django admin with real
 per-problem Postgres schema provisioning, a login-gated problem catalog
-page (filterable by difficulty/topic), the per-problem workspace page
-(`/problems/<slug>/`, static — editor/Run/tabs not wired to anything yet),
-and the sandboxed query execution engine itself (`practice/sandbox.py`:
-`validate_select_only`, `run_in_schema`, `check_submission`). 14 automated
-tests cover it (correct/incorrect/order-sensitivity, rejected non-SELECT,
-rejected multi-statement, blocked from `public.auth_user`, and a real
-5-second timeout on `pg_sleep(10)`), plus manual verification against the
-real "average salary per department" problem. Not wired into the UI yet —
-that's milestone 7. Next step: milestone 7 (AJAX endpoint + live results).
+page (filterable by difficulty/topic), the sandboxed query execution engine
+(`practice/sandbox.py`, 14 automated tests), and the per-problem workspace
+page is now fully wired end to end: the Run button POSTs to
+`/problems/<slug>/run/` (`views.run_query`) via `static/js/workspace.js`,
+which renders the actual result table, switches tabs automatically based on
+correct/incorrect/error, and shows an inline status banner. Verified in a
+real browser (not just curl) — login, editing the query, clicking Run,
+correct/incorrect/rejected cases, manual tab-switching, zero console
+errors, and confirmed a rejected `DELETE` truly didn't touch the data.
+Submissions aren't logged to the DB yet — that's milestone 8. Next step:
+milestone 8 (Submission tracking + solved badges).
 
 To run it: `docker compose up -d` (from `code/`), then
 `uv run manage.py runserver`. pgAdmin is on **5051**, not 5050 — that port
@@ -64,8 +66,9 @@ Planned milestones:
    — done (static shell; editor/Run and tab-switching aren't wired yet)
 6. ~~Sandboxed SQL execution via the `practice_runner` Postgres role, safety
    checks~~ — done
-7. Run-query AJAX endpoint + JS results table, with Running/Correct/
-   Incorrect/Error states shown as an inline banner on the Results panel
+7. ~~Run-query AJAX endpoint + JS results table, with Running/Correct/
+   Incorrect/Error states shown as an inline banner on the Results panel~~
+   — done
 8. Submission tracking + solved badges
 9. Hints + reveal-solution UI (left panel of the dashboard)
 10. Profile (display name only) + password settings pages
@@ -97,7 +100,7 @@ sql-practice-platform/
     ├── manage.py
     ├── config/            # Django project package
     │   ├── settings.py    # env-driven: Postgres, Mailpit SMTP, auth backend, templates/static dirs
-    │   └── urls.py        # home, problems, signup/verify/resend, login/logout, password-reset
+    │   └── urls.py        # home, problems, problems/<slug>/run, signup/verify/resend, login/logout, password-reset
     ├── practice/          # the one Django app
     │   ├── models.py      # EmailOTP, Problem (+ provision_schema)
     │   ├── forms.py        # SignupForm, VerifyForm, EmailAuthenticationForm
@@ -119,7 +122,8 @@ sql-practice-platform/
     │       ├── login.html
     │       └── password_reset_*.html
     └── static/
-        └── css/base.css
+        ├── css/base.css
+        └── js/workspace.js  # Run button: fetch, tab switching, status banner
 ```
 
 One Django app (`practice`) per the app-per-project convention below — no

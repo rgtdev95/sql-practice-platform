@@ -135,7 +135,11 @@ form p {
 }
 
 .results-panel .tab {
-    padding-bottom: 0.5rem;
+    background: none;
+    border: none;
+    font: inherit;
+    cursor: pointer;
+    padding: 0 0 0.5rem;
     color: #666;
 }
 
@@ -147,4 +151,34 @@ form p {
 
 .results-panel .placeholder {
     color: #666;
+}
+
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+.status-banner {
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.status-banner.status-correct {
+    background: #e6f4ea;
+    color: #1e7e34;
+}
+
+.status-banner.status-incorrect {
+    background: #fff4e5;
+    color: #b06000;
+}
+
+.status-banner.status-error {
+    background: #fdecea;
+    color: #b00020;
 }
