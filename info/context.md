@@ -8,19 +8,20 @@ sandboxed dataset, and get instant correct/incorrect feedback.
 
 ## Current status
 
-Milestones 1-5 are done. `code/` has a working Django project wired to real
+Milestones 1-6 are done. `code/` has a working Django project wired to real
 Postgres, with pgAdmin and Mailpit running alongside it via Docker Compose,
 a fully working auth flow (sign up, email-OTP verification, login, logout,
 forgot-password), `Problem` authoring via Django admin with real
 per-problem Postgres schema provisioning, a login-gated problem catalog
-page (filterable by difficulty/topic), and the per-problem workspace page
-(`/problems/<slug>/`) rendering the question, live sample-data tables
-(read as `practice_runner`, via the new `practice/sandbox.py`), hint/
-solution collapsibles, a query editor textarea, and a static tabbed
-results panel. The editor and Run button don't do anything yet — that's
-milestones 6-7. All tested end to end against the running dev server and
-real Postgres. Next step: milestone 6 (the sandboxed query execution
-engine itself).
+page (filterable by difficulty/topic), the per-problem workspace page
+(`/problems/<slug>/`, static — editor/Run/tabs not wired to anything yet),
+and the sandboxed query execution engine itself (`practice/sandbox.py`:
+`validate_select_only`, `run_in_schema`, `check_submission`). 14 automated
+tests cover it (correct/incorrect/order-sensitivity, rejected non-SELECT,
+rejected multi-statement, blocked from `public.auth_user`, and a real
+5-second timeout on `pg_sleep(10)`), plus manual verification against the
+real "average salary per department" problem. Not wired into the UI yet —
+that's milestone 7. Next step: milestone 7 (AJAX endpoint + live results).
 
 To run it: `docker compose up -d` (from `code/`), then
 `uv run manage.py runserver`. pgAdmin is on **5051**, not 5050 — that port
@@ -38,7 +39,16 @@ email" message can run; switched to `AllowAllUsersModelBackend`, see
 The `practice_runner` Postgres role is created by a hand-written migration
 (`practice/migrations/0003_create_practice_runner_role.py`), not a
 management command — ties its creation to `migrate`, which already needs
-to run before the app works.
+to run before the app works. `runner_connection()` derives host/port/dbname
+from Django's own live connection (`django.db.connection.settings_dict`)
+rather than reading `POSTGRES_*` env vars directly — needed because
+Django's test runner connects to a separate `test_<name>` database that
+the env vars never reflect, which the first version of the sandbox tests
+caught immediately (every test failed with a wrong-database error until
+fixed). "Order matters" for grading is decided by whether the *problem's
+`solution_sql`* has an `ORDER BY`, not whether the submission does — the
+problem author's intent, not an accident of how the learner happened to
+write their query.
 
 Planned milestones:
 1. ~~uv + Django scaffold, base template, local Postgres + pgAdmin +
@@ -52,8 +62,8 @@ Planned milestones:
    editor, tabbed results (Your Output / Expected Output / Errors), with
    sample-data tables rendered from `information_schema` introspection~~
    — done (static shell; editor/Run and tab-switching aren't wired yet)
-6. Sandboxed SQL execution via the `practice_runner` Postgres role, safety
-   checks
+6. ~~Sandboxed SQL execution via the `practice_runner` Postgres role, safety
+   checks~~ — done
 7. Run-query AJAX endpoint + JS results table, with Running/Correct/
    Incorrect/Error states shown as an inline banner on the Results panel
 8. Submission tracking + solved badges
@@ -92,9 +102,10 @@ sql-practice-platform/
     │   ├── models.py      # EmailOTP, Problem (+ provision_schema)
     │   ├── forms.py        # SignupForm, VerifyForm, EmailAuthenticationForm
     │   ├── views.py
-    │   ├── sandbox.py      # practice_runner connection + sample-table reads
+    │   ├── sandbox.py      # practice_runner connection, sample-table reads,
+    │   │                   # validate_select_only, run_in_schema, check_submission
     │   ├── admin.py        # ProblemAdmin wires provision_schema() into save
-    │   ├── tests.py         # provisioning: grants, idempotency, rollback-on-bad-SQL
+    │   ├── tests.py         # provisioning + sandbox execution (14 tests)
     │   └── migrations/
     │       └── 0003_create_practice_runner_role.py
     ├── templates/
